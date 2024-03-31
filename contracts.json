@@ -1,0 +1,44 @@
+{
+    "ES": {
+        "secType": "FUT",
+        "symbol": "ES",
+        "localSymbol": "",
+        "lastTradeDateOrContractMonth": "202406",
+        "exchange": "CME"
+    },
+    "NQ": {
+        "secType": "FUT",
+        "symbol": "NQ",
+        "localSymbol": "",
+        "lastTradeDateOrContractMonth": "202406",
+        "exchange": "CME"
+    },
+    "YM": {
+        "secType": "FUT",
+        "symbol": "YM",
+        "localSymbol": "",
+        "lastTradeDateOrContractMonth": "202406",
+        "exchange": "CBOT"
+    },
+    "RTY": {
+        "secType": "FUT",
+        "symbol": "RTY",
+        "localSymbol": "",
+        "lastTradeDateOrContractMonth": "202406",
+        "exchange": "CME"
+    },
+    "CL": {
+        "secType": "FUT",
+        "symbol": "CL",
+        "localSymbol": "",
+        "lastTradeDateOrContractMonth": "202405",
+        "exchange": "NYMEX"
+    },
+    "GC": {
+        "secType": "FUT",
+        "symbol": "GC",
+        "localSymbol": "",
+        "lastTradeDateOrContractMonth": "202406",
+        "exchange": "COMEX"
+    }
+}

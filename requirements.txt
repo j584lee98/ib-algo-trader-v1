@@ -1,0 +1,2 @@
+pandas==2.2.1
+ib-insync==0.9.86
