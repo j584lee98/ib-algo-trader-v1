@@ -1,4 +1,8 @@
+strategies/
 __pycache__
 algo-v1
 notes.txt
 ib-api-test.ipynb
+strategy.py
+algo-test.ipynb
+data_df.csv
