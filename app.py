@@ -1,6 +1,8 @@
 import json
 import time
 from datetime import datetime
+import argparse
+from contextlib import suppress
 
 import numpy as np
 import pandas as pd
@@ -9,11 +11,16 @@ from ib_insync import *
 
 from strategy import strategy
 
-ib = IB()
+parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument("-p", "--port", default=7496, type=int, choices=[7496, 7497], help='IB Port\n - Live Trading: 7496\n - Paper Trading: 7497')
+parser.add_argument("-m", "--micro", action='store_true', help='Contract Type')
+args = parser.parse_args()
 
-# 7496 - Real trading account
-# 7497 - Paper trading account
-ib.connect(port=7497, clientId=1)
+port = args.port
+micro = args.micro
+
+ib = IB()
+ib.connect(port=port, clientId=1)
 
 # Data/Parameters
 contracts = json.load(open('contracts.json'))
@@ -22,6 +29,8 @@ timeframes = json.load(open('timeframes.json'))
 ohlcv_bars = np.array([[None] * len(contracts)] * len(timeframes))
 
 contract_details = []
+micro_contract_details = []
+
 for con in contracts.values():
     contract = Contract(
         secType=con['secType'],
@@ -30,10 +39,19 @@ for con in contracts.values():
         lastTradeDateOrContractMonth=con['lastTradeDateOrContractMonth'],
         exchange=con['exchange']
     )
+    micro_contract = Contract(
+        secType=con['secType'],
+        symbol=con['microSymbol'],
+        localSymbol=con['localSymbol'],
+        lastTradeDateOrContractMonth=con['lastTradeDateOrContractMonth'],
+        exchange=con['exchange']
+    )
     contract = ib.qualifyContracts(contract)[0]
+    micro_contract = ib.qualifyContracts(micro_contract)[0]
     contract_details.append(contract)
+    micro_contract_details.append(micro_contract)
 
-net_liq_limit = 0.7
+net_liq_limit = 0.5
 order_timeout = 10
 open_order_datetime = datetime.now()
 
@@ -140,29 +158,33 @@ def fetch_bars():
         for i, (tf, dur) in enumerate(timeframes.items()):
             for j, desc in enumerate(contracts.values()):
                 if updated[i][j] == False:
-                    ohlcv_bars[i][j] = ib.reqHistoricalData(
-                        contract_details[j],
-                        endDateTime='',
-                        durationStr=dur,
-                        barSizeSetting=tf,
-                        whatToShow='TRADES',
-                        useRTH=False
-                    )
-                    if ohlcv_bars[i][j][-1].date.minute == datetime.now().minute:
-                        on_bars_update(ohlcv_bars[i][j], contract_details[j], desc)
-                        updated[i][j] = True
+                    with suppress(IndexError):
+                        ohlcv_bars[i][j] = ib.reqHistoricalData(
+                            contract_details[j],
+                            endDateTime='',
+                            durationStr=dur,
+                            barSizeSetting=tf,
+                            whatToShow='TRADES',
+                            useRTH=False
+                        )
+                        if ohlcv_bars[i][j][-1].date.minute == datetime.now().minute:
+                            contract = micro_contract_details[j] if micro else contract_details[j]
+                            on_bars_update(ohlcv_bars[i][j], contract, desc)
+                            updated[i][j] = True
         time.sleep(1)
 
-# Run every 10 minutes
-schedule.every().hour.at(":00").do(fetch_bars)
-schedule.every().hour.at(":10").do(fetch_bars)
-schedule.every().hour.at(":20").do(fetch_bars)
-schedule.every().hour.at(":30").do(fetch_bars)
-schedule.every().hour.at(":40").do(fetch_bars)
-schedule.every().hour.at(":50").do(fetch_bars)
+def main():
+    # Run every 10 minutes
+    schedule.every().hour.at(":00").do(fetch_bars)
+    schedule.every().hour.at(":10").do(fetch_bars)
+    schedule.every().hour.at(":20").do(fetch_bars)
+    schedule.every().hour.at(":30").do(fetch_bars)
+    schedule.every().hour.at(":40").do(fetch_bars)
+    schedule.every().hour.at(":50").do(fetch_bars)
 
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
-# ib.disconnect()
+if __name__ == "__main__":
+    main()

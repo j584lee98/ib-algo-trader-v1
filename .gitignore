@@ -2,7 +2,7 @@ strategies/
 __pycache__
 algo-v1
 notes.txt
-ib-api-test.ipynb
+micro-contracts.json
 strategy.py
-algo-test.ipynb
-data_df.csv
+*.ipynb
+*.csv
