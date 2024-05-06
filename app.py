@@ -20,7 +20,7 @@ port = 7497 if args.paper else 7496
 micro = args.micro
 
 ib = IB()
-ib.connect(port=port, clientId=1)
+ib.connect(port=port, clientId=0)
 
 # Data/Parameters
 contracts = json.load(open('contracts.json'))
@@ -54,6 +54,7 @@ for con in contracts.values():
 net_liq_limit = 0.8
 order_timeout = 10
 open_order_datetime = datetime.now()
+algo_live = False
 
 # Order placing - 4 bracket setup
 def place_order(contract, direction, amount, price, stop):
@@ -148,7 +149,9 @@ def cancel_stale_parent_orders():
 
 # Run for each contract after bar update
 def on_bars_update(bars, contract, desc):
-    cancel_stale_parent_orders()
+    global algo_live
+    if algo_live:
+        cancel_stale_parent_orders()
     parentOrders = [x for x in ib.openOrders() if x.parentId == 0]
     # if not parentOrders:
     if len(ib.openOrders()) == 0 and len(ib.positions()) == 0:
@@ -166,10 +169,12 @@ def on_bars_update(bars, contract, desc):
                     # Long order
                     place_order(contract, 'BUY', max_contracts, df['close'].iloc[-1], stop)
                     open_order_datetime = bars[-1].date.replace(tzinfo=None)
+                    algo_live = True
                 else:
                     # Short order
                     place_order(contract, 'SELL', max_contracts, df['close'].iloc[-1], stop)
                     open_order_datetime = bars[-1].date.replace(tzinfo=None)
+                    algo_live = True
 
 # Periodic data fetch from IB
 def fetch_bars():
