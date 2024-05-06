@@ -128,6 +128,7 @@ def place_order(contract, direction, amount, price, stop):
         ib.placeOrder(contract, b3)
     for b4 in order4:
         ib.placeOrder(contract, b4)
+    ib.sleep(3)
 
 # Calculate maximum number of contracts available for order
 def calc_max_contracts(contract):
