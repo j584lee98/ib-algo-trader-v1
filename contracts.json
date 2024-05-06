@@ -1,24 +1,4 @@
 {
-    "ES": {
-        "secType": "FUT",
-        "symbol": "ES",
-        "microSymbol": "MES",
-        "localSymbol": "",
-        "lastTradeDateOrContractMonth": "202406",
-        "exchange": "CME",
-        "tickSize": 0.25,
-        "tickStop": 28
-    },
-    "NQ": {
-        "secType": "FUT",
-        "symbol": "NQ",
-        "microSymbol": "MNQ",
-        "localSymbol": "",
-        "lastTradeDateOrContractMonth": "202406",
-        "exchange": "CME",
-        "tickSize": 0.25,
-        "tickStop": 127
-    },
     "YM": {
         "secType": "FUT",
         "symbol": "YM",
@@ -27,36 +7,6 @@
         "lastTradeDateOrContractMonth": "202406",
         "exchange": "CBOT",
         "tickSize": 1,
-        "tickStop": 47
-    },
-    "RTY": {
-        "secType": "FUT",
-        "symbol": "RTY",
-        "microSymbol": "M2K",
-        "localSymbol": "",
-        "lastTradeDateOrContractMonth": "202406",
-        "exchange": "CME",
-        "tickSize": 0.1,
-        "tickStop": 42
-    },
-    "CL": {
-        "secType": "FUT",
-        "symbol": "CL",
-        "microSymbol": "MCL",
-        "localSymbol": "",
-        "lastTradeDateOrContractMonth": "202406",
-        "exchange": "NYMEX",
-        "tickSize": 0.01,
-        "tickStop": 23
-    },
-    "GC": {
-        "secType": "FUT",
-        "symbol": "GC",
-        "microSymbol": "MGC",
-        "localSymbol": "",
-        "lastTradeDateOrContractMonth": "202406",
-        "exchange": "COMEX",
-        "tickSize": 0.1,
-        "tickStop": 49
+        "tickStop": 50
     }
 }

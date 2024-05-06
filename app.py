@@ -12,11 +12,11 @@ from ib_insync import *
 from strategy import strategy
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument("-p", "--port", default=7496, type=int, choices=[7496, 7497], help='IB Port\n - Live Trading: 7496\n - Paper Trading: 7497')
-parser.add_argument("-m", "--micro", action='store_true', help='Contract Type')
+parser.add_argument("-p", "--paper", action='store_true', help='Paper Trading Account')
+parser.add_argument("-m", "--micro", action='store_true', help='Micro Contracts')
 args = parser.parse_args()
 
-port = args.port
+port = 7497 if args.paper else 7496
 micro = args.micro
 
 ib = IB()
