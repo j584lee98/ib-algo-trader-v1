@@ -51,22 +51,27 @@ for con in contracts.values():
     contract_details.append(contract)
     micro_contract_details.append(micro_contract)
 
-net_liq_limit = 0.5
+net_liq_limit = 0.8
 order_timeout = 10
 open_order_datetime = datetime.now()
 
-# Order placing - 3 bracket setup
+# Order placing - 4 bracket setup
 def place_order(contract, direction, amount, price, stop):
-    mod = amount % 3
-    amount1 = int(amount/3) + (1 if mod >= 1 else 0)
-    amount2 = int(amount/3) + (1 if mod == 2 else 0)
-    amount3 = int(amount/3)
+    mod = amount % 4
+    amount1 = int(amount/4) + (1 if mod >= 1 else 0)
+    amount2 = int(amount/4) + (1 if mod >= 2 else 0)
+    amount3 = int(amount/4) + (1 if mod == 3 else 0)
+    amount4 = int(amount/4)
+
     takeProfit1 = price + stop * 2 if direction == 'BUY' else price - stop * 2
     takeProfit2 = price + stop * 4 if direction == 'BUY' else price - stop * 4
     takeProfit3 = price + stop * 6 if direction == 'BUY' else price - stop * 6
+    takeProfit4 = price + stop * 12 if direction == 'BUY' else price - stop * 12
+
     stopLoss = price - stop if direction == 'BUY' else price + stop
     trigger = price + stop if direction == 'BUY' else price - stop
     adjustedStop = price
+
     order1 = ib.bracketOrder(
         action=direction,
         quantity=amount1,
@@ -103,12 +108,26 @@ def place_order(contract, direction, amount, price, stop):
         tif='GTC',
         outsideRth=True
     )
+    order4 = ib.bracketOrder(
+        action=direction,
+        quantity=amount4,
+        limitPrice=price,
+        takeProfitPrice=takeProfit4,
+        stopLossPrice=stopLoss,
+        adjustedOrderType='STP',
+        triggerPrice=trigger,
+        adjustedStopPrice=adjustedStop,
+        tif='GTC',
+        outsideRth=True
+    )
     for b1 in order1:
         ib.placeOrder(contract, b1)
     for b2 in order2:
         ib.placeOrder(contract, b2)
     for b3 in order3:
         ib.placeOrder(contract, b3)
+    for b4 in order4:
+        ib.placeOrder(contract, b4)
 
 # Calculate maximum number of contracts available for order
 def calc_max_contracts(contract):
@@ -116,7 +135,7 @@ def calc_max_contracts(contract):
     fullInitMarginReq = float([x for x in ib.accountSummary() if x.tag == 'FullInitMarginReq'][0].value)
     marginAvailable = netLiquidation * net_liq_limit - fullInitMarginReq
     marginRequirement = float(ib.whatIfOrder(contract, Order(action='BUY', totalQuantity=1, orderType='MKT')).initMarginChange)
-    return int(marginAvailable/marginRequirement)
+    return min(int(marginAvailable/marginRequirement), 4)
 
 # Cancel any orders that have been open for longer than the order timeout
 def cancel_stale_parent_orders():
