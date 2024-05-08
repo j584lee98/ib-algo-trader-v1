@@ -51,7 +51,14 @@ for con in contracts.values():
     contract_details.append(contract)
     micro_contract_details.append(micro_contract)
 
-net_liq_limit = 0.8
+day_h = 9
+day_m = 30
+ovn_h = 16
+ovn_m = 15
+
+margin_day_mult = 1.43
+margin_ovn_mult = 1.00
+
 order_timeout = 10
 open_order_datetime = datetime.now()
 algo_live = False
@@ -131,13 +138,37 @@ def place_order(contract, direction, amount, price, stop):
         ib.placeOrder(contract, b4)
     ib.sleep(3)
 
+# Check if intraday hours
+def is_intraday(intra_start_hour, intra_start_minute, intra_end_hour, intra_end_minute):
+    dt_now = datetime.now()
+    now_hour = dt_now.hour
+    now_minute = dt_now.minute
+    if now_hour < intra_start_hour:
+        return False
+    elif now_hour == intra_start_hour:
+        if now_minute < intra_start_minute:
+            return False
+        else:
+            return True
+    elif now_hour < intra_end_hour:
+        return True
+    elif now_hour == intra_end_hour:
+        if now_minute < intra_end_minute:
+            return True
+        else:
+            return False
+    else:
+        return False
+
 # Calculate maximum number of contracts available for order
 def calc_max_contracts(contract):
     netLiquidation = float([x for x in ib.accountSummary() if x.tag == 'NetLiquidation'][0].value)
     fullInitMarginReq = float([x for x in ib.accountSummary() if x.tag == 'FullInitMarginReq'][0].value)
-    marginAvailable = netLiquidation * net_liq_limit - fullInitMarginReq
+    marginAvailable = netLiquidation - fullInitMarginReq
     marginRequirement = float(ib.whatIfOrder(contract, Order(action='BUY', totalQuantity=1, orderType='MKT')).initMarginChange)
-    return min(int(marginAvailable/marginRequirement), 4)
+    marginMultiplier = margin_day_mult if is_intraday(day_h, day_m, ovn_h, ovn_m) else margin_ovn_mult
+    marginReqAdjusted = marginRequirement * marginMultiplier
+    return min(int(marginAvailable/marginReqAdjusted), 4)
 
 # Cancel any orders that have been open for longer than the order timeout
 def cancel_stale_parent_orders():
