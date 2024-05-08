@@ -11,6 +11,21 @@ from ib_insync import *
 
 from strategy import strategy
 
+# Settings/Parameters
+day_h = 9
+day_m = 30
+ovn_h = 16
+ovn_m = 15
+
+margin_day_mult = 1.43
+margin_ovn_mult = 1.00
+
+curr_conv = 1.37
+max_trade_risk = 0.02
+
+order_timeout = 10
+
+# Script param tags
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-p", "--paper", action='store_true', help='Paper Trading Account')
 parser.add_argument("-m", "--micro", action='store_true', help='Micro Contracts')
@@ -19,10 +34,11 @@ args = parser.parse_args()
 port = 7497 if args.paper else 7496
 micro = args.micro
 
+# IB client object
 ib = IB()
 ib.connect(port=port, clientId=0)
 
-# Data/Parameters
+# Contracts + Data Resolution
 contracts = json.load(open('contracts.json'))
 timeframes = json.load(open('timeframes.json'))
 
@@ -51,22 +67,10 @@ for con in contracts.values():
     contract_details.append(contract)
     micro_contract_details.append(micro_contract)
 
-day_h = 9
-day_m = 30
-ovn_h = 16
-ovn_m = 15
-
-margin_day_mult = 1.43
-margin_ovn_mult = 1.00
-
-curr_conv = 1.37
-max_trade_risk = 0.02
-
-order_timeout = 10
 open_order_datetime = datetime.now()
 algo_live = False
 
-# Order placing - 4 bracket setup
+# Order placing - bracket setup
 def place_order(contract, direction, amount, price, stop):
     mod = amount % 4
     amount1 = int(amount/4) + (1 if mod >= 1 else 0)
@@ -164,20 +168,20 @@ def is_intraday(intra_start_hour, intra_start_minute, intra_end_hour, intra_end_
         return False
 
 # Calculate maximum number of contracts available for order
-def calc_max_contracts(contract, tickValue, tickStop):
-    netLiquidation = float([x for x in ib.accountSummary() if x.tag == 'NetLiquidation'][0].value)
-    fullInitMarginReq = float([x for x in ib.accountSummary() if x.tag == 'FullInitMarginReq'][0].value)
-    marginAvailable = netLiquidation - fullInitMarginReq
-    marginRequirement = float(ib.whatIfOrder(contract, Order(action='BUY', totalQuantity=1, orderType='MKT')).initMarginChange)
-    marginMultiplier = margin_day_mult if is_intraday(day_h, day_m, ovn_h, ovn_m) else margin_ovn_mult
-    marginReqAdjusted = marginRequirement * marginMultiplier
-    tickValue = tickValue * 0.1 if micro else tickValue
-    tickValueAdjusted = tickValue * curr_conv
-    contractRisk = tickValueAdjusted * tickStop
+def calc_max_contracts(contract, tick_value, tick_stop):
+    net_liquidation = float([x for x in ib.accountSummary() if x.tag == 'NetLiquidation'][0].value)
+    full_init_margin_req = float([x for x in ib.accountSummary() if x.tag == 'FullInitMarginReq'][0].value)
+    margin_available = net_liquidation - full_init_margin_req
+    contract_init_margin_req = float(ib.whatIfOrder(contract, Order(action='BUY', totalQuantity=1, orderType='MKT')).initMarginChange)
+    margin_multiplier = margin_day_mult if is_intraday(day_h, day_m, ovn_h, ovn_m) else margin_ovn_mult
+    adj_init_margin_req = contract_init_margin_req * margin_multiplier
+    tick_value = tick_value * 0.1 if micro else tick_value
+    adj_tick_value = tick_value * curr_conv
+    contract_risk = adj_tick_value * tick_stop
 
-    maxRisk = marginAvailable * max_trade_risk
+    max_risk = margin_available * max_trade_risk
 
-    return min(int(marginAvailable/marginReqAdjusted), int(maxRisk/contractRisk))
+    return min(int(margin_available/adj_init_margin_req), int(max_risk/contract_risk))
 
 # Cancel any orders that have been open for longer than the order timeout
 def cancel_stale_parent_orders():
