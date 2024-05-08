@@ -59,6 +59,9 @@ ovn_m = 15
 margin_day_mult = 1.43
 margin_ovn_mult = 1.00
 
+curr_conv = 1.37
+max_trade_risk = 0.02
+
 order_timeout = 10
 open_order_datetime = datetime.now()
 algo_live = False
@@ -161,14 +164,20 @@ def is_intraday(intra_start_hour, intra_start_minute, intra_end_hour, intra_end_
         return False
 
 # Calculate maximum number of contracts available for order
-def calc_max_contracts(contract):
+def calc_max_contracts(contract, tickValue, tickStop):
     netLiquidation = float([x for x in ib.accountSummary() if x.tag == 'NetLiquidation'][0].value)
     fullInitMarginReq = float([x for x in ib.accountSummary() if x.tag == 'FullInitMarginReq'][0].value)
     marginAvailable = netLiquidation - fullInitMarginReq
     marginRequirement = float(ib.whatIfOrder(contract, Order(action='BUY', totalQuantity=1, orderType='MKT')).initMarginChange)
     marginMultiplier = margin_day_mult if is_intraday(day_h, day_m, ovn_h, ovn_m) else margin_ovn_mult
     marginReqAdjusted = marginRequirement * marginMultiplier
-    return min(int(marginAvailable/marginReqAdjusted), 4)
+    tickValue = tickValue * 0.1 if micro else tickValue
+    tickValueAdjusted = tickValue * curr_conv
+    contractRisk = tickValueAdjusted * tickStop
+
+    maxRisk = marginAvailable * max_trade_risk
+
+    return min(int(marginAvailable/marginReqAdjusted), int(maxRisk/contractRisk))
 
 # Cancel any orders that have been open for longer than the order timeout
 def cancel_stale_parent_orders():
@@ -186,7 +195,7 @@ def on_bars_update(bars, contract, desc):
     parentOrders = [x for x in ib.openOrders() if x.parentId == 0]
     # if not parentOrders:
     if len(ib.openOrders()) == 0 and len(ib.positions()) == 0:
-        max_contracts = calc_max_contracts(contract)
+        max_contracts = calc_max_contracts(contract, desc['tickNotional'], desc['tickStop'])
         if max_contracts >= 3:
             # Check strategy
             df = pd.DataFrame(bars)[['date', 'open', 'high', 'low', 'close']].iloc[:-1]
