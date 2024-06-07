@@ -184,9 +184,9 @@ def calc_max_contracts(contract, tick_value, tick_stop):
     return min(int(margin_available/adj_init_margin_req), int(max_risk/contract_risk))
 
 # Cancel any orders that have been open for longer than the order timeout
-def cancel_stale_parent_orders():
-    timediff = (datetime.now() - open_order_datetime).total_seconds() / 60.0
-    if timediff > order_timeout:
+def cancel_stale_parent_orders(last_bar):
+    timediff = (last_bar - open_order_datetime).total_seconds() / 60.0
+    if timediff >= order_timeout:
         parentOrders = [x for x in ib.openOrders() if x.parentId == 0]
         for order in parentOrders:
             ib.cancelOrder(order)
@@ -194,13 +194,12 @@ def cancel_stale_parent_orders():
 # Run for each contract after bar update
 def on_bars_update(bars, contract, desc):
     global algo_live
+    last_bar = bars[-1].date.replace(tzinfo=None)
     if algo_live:
-        cancel_stale_parent_orders()
-    parentOrders = [x for x in ib.openOrders() if x.parentId == 0]
-    # if not parentOrders:
+        cancel_stale_parent_orders(last_bar)
     if len(ib.openOrders()) == 0 and len(ib.positions()) == 0:
         max_contracts = calc_max_contracts(contract, desc['tickNotional'], desc['tickStop'])
-        if max_contracts >= 3:
+        if max_contracts >= 4:
             # Check strategy
             df = pd.DataFrame(bars)[['date', 'open', 'high', 'low', 'close']].iloc[:-1]
             ret = strategy(df)
@@ -212,13 +211,11 @@ def on_bars_update(bars, contract, desc):
                 if ret == 1:
                     # Long order
                     place_order(contract, 'BUY', max_contracts, df['close'].iloc[-1], stop)
-                    open_order_datetime = bars[-1].date.replace(tzinfo=None)
-                    algo_live = True
                 else:
                     # Short order
                     place_order(contract, 'SELL', max_contracts, df['close'].iloc[-1], stop)
-                    open_order_datetime = bars[-1].date.replace(tzinfo=None)
-                    algo_live = True
+                open_order_datetime = last_bar
+                algo_live = True
 
 # Periodic data fetch from IB
 def fetch_bars():

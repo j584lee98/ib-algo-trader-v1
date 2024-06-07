@@ -7,7 +7,7 @@
         "lastTradeDateOrContractMonth": "202406",
         "exchange": "CBOT",
         "tickSize": 1,
-        "tickStop": 48,
+        "tickStop": 40,
         "tickNotional": 5
     }
 }
