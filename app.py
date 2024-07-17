@@ -93,9 +93,9 @@ def place_order(contract, direction, amount, price, stop):
         limitPrice=price,
         takeProfitPrice=takeProfit1,
         stopLossPrice=stopLoss,
-        adjustedOrderType='STP',
-        triggerPrice=trigger,
-        adjustedStopPrice=adjustedStop,
+        # adjustedOrderType='STP',
+        # triggerPrice=trigger,
+        # adjustedStopPrice=adjustedStop,
         tif='GTC',
         outsideRth=True
     )
@@ -105,9 +105,9 @@ def place_order(contract, direction, amount, price, stop):
         limitPrice=price,
         takeProfitPrice=takeProfit2,
         stopLossPrice=stopLoss,
-        adjustedOrderType='STP',
-        triggerPrice=trigger,
-        adjustedStopPrice=adjustedStop,
+        # adjustedOrderType='STP',
+        # triggerPrice=trigger,
+        # adjustedStopPrice=adjustedStop,
         tif='GTC',
         outsideRth=True
     )
@@ -117,9 +117,9 @@ def place_order(contract, direction, amount, price, stop):
         limitPrice=price,
         takeProfitPrice=takeProfit3,
         stopLossPrice=stopLoss,
-        adjustedOrderType='STP',
-        triggerPrice=trigger,
-        adjustedStopPrice=adjustedStop,
+        # adjustedOrderType='STP',
+        # triggerPrice=trigger,
+        # adjustedStopPrice=adjustedStop,
         tif='GTC',
         outsideRth=True
     )
@@ -129,9 +129,9 @@ def place_order(contract, direction, amount, price, stop):
         limitPrice=price,
         takeProfitPrice=takeProfit4,
         stopLossPrice=stopLoss,
-        adjustedOrderType='STP',
-        triggerPrice=trigger,
-        adjustedStopPrice=adjustedStop,
+        # adjustedOrderType='STP',
+        # triggerPrice=trigger,
+        # adjustedStopPrice=adjustedStop,
         tif='GTC',
         outsideRth=True
     )
@@ -190,6 +190,7 @@ def cancel_stale_parent_orders(last_bar):
         parentOrders = [x for x in ib.openOrders() if x.parentId == 0]
         for order in parentOrders:
             ib.cancelOrder(order)
+        ib.sleep(3)
 
 # Run for each contract after bar update
 def on_bars_update(bars, contract, desc):
