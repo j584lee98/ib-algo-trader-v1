@@ -23,7 +23,7 @@ margin_ovn_mult = 1.00
 curr_conv = 1.37
 max_trade_risk = 0.02
 
-order_timeout = 10
+order_timeout = 30
 
 # Script param tags
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
@@ -84,8 +84,6 @@ def place_order(contract, direction, amount, price, stop):
     takeProfit4 = price + stop * 12 if direction == 'BUY' else price - stop * 12
 
     stopLoss = price - stop if direction == 'BUY' else price + stop
-    trigger = price + stop if direction == 'BUY' else price - stop
-    adjustedStop = price
 
     order1 = ib.bracketOrder(
         action=direction,
@@ -93,9 +91,6 @@ def place_order(contract, direction, amount, price, stop):
         limitPrice=price,
         takeProfitPrice=takeProfit1,
         stopLossPrice=stopLoss,
-        # adjustedOrderType='STP',
-        # triggerPrice=trigger,
-        # adjustedStopPrice=adjustedStop,
         tif='GTC',
         outsideRth=True
     )
@@ -105,9 +100,6 @@ def place_order(contract, direction, amount, price, stop):
         limitPrice=price,
         takeProfitPrice=takeProfit2,
         stopLossPrice=stopLoss,
-        # adjustedOrderType='STP',
-        # triggerPrice=trigger,
-        # adjustedStopPrice=adjustedStop,
         tif='GTC',
         outsideRth=True
     )
@@ -117,9 +109,6 @@ def place_order(contract, direction, amount, price, stop):
         limitPrice=price,
         takeProfitPrice=takeProfit3,
         stopLossPrice=stopLoss,
-        # adjustedOrderType='STP',
-        # triggerPrice=trigger,
-        # adjustedStopPrice=adjustedStop,
         tif='GTC',
         outsideRth=True
     )
@@ -129,9 +118,6 @@ def place_order(contract, direction, amount, price, stop):
         limitPrice=price,
         takeProfitPrice=takeProfit4,
         stopLossPrice=stopLoss,
-        # adjustedOrderType='STP',
-        # triggerPrice=trigger,
-        # adjustedStopPrice=adjustedStop,
         tif='GTC',
         outsideRth=True
     )
