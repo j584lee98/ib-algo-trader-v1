@@ -224,7 +224,7 @@ def fetch_bars():
                             contract = micro_contract_details[j] if micro else contract_details[j]
                             on_bars_update(ohlcv_bars[i][j], contract, desc)
                             updated[i][j] = True
-        time.sleep(1)
+        util.sleep(1)
 
 def main():
     # Run every 10 minutes
@@ -237,7 +237,7 @@ def main():
 
     while True:
         schedule.run_pending()
-        time.sleep(1)
+        util.sleep(1)
 
 if __name__ == "__main__":
     main()

@@ -4,5 +4,6 @@ algo-v1
 notes.txt
 micro-contracts.json
 strategy.py
+test.py
 *.ipynb
 *.csv
