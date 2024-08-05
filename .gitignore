@@ -2,6 +2,7 @@ __pycache__/
 algo-v1/
 
 contract.json
+functions.py
 strategy.py
 test.py
 *.ipynb
