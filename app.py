@@ -1,10 +1,8 @@
 import json
-import time
 from datetime import datetime
 import argparse
 from contextlib import suppress
 
-import numpy as np
 import pandas as pd
 import schedule
 from ib_insync import *
@@ -25,7 +23,7 @@ max_trade_risk = 0.02
 
 order_timeout = 30
 
-# Script param tags
+# Script paramater tags
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument("-p", "--paper", action='store_true', help='Paper Trading Account')
 parser.add_argument("-m", "--micro", action='store_true', help='Micro Contracts')
@@ -34,19 +32,13 @@ args = parser.parse_args()
 port = 7497 if args.paper else 7496
 micro = args.micro
 
-# IB client object
+# IB client
 ib = IB()
 ib.connect(port=port, clientId=0)
 
-# Contract
+# Trading contract
 cont_desc = json.load(open('contract.json'))
 
-# ohlcv_bars = np.array([None] * len(contracts))
-
-# contract_details = []
-# micro_contract_details = []
-
-# for con in contracts.values():
 ib_cont = Contract(
     secType=cont_desc['secType'],
     symbol=cont_desc['symbol'],
@@ -61,11 +53,9 @@ ib_cont_micro = Contract(
     lastTradeDateOrContractMonth=cont_desc['lastTradeDateOrContractMonth'],
     exchange=cont_desc['exchange']
 )
+
 ib_cont = ib.qualifyContracts(ib_cont)[0]
 ib_cont_micro = ib.qualifyContracts(ib_cont_micro)[0]
-
-    # contract_details.append(contract)
-    # micro_contract_details.append(micro_contract)
 
 open_order_datetime = datetime.now()
 algo_live = False
@@ -73,6 +63,7 @@ algo_live = False
 # Order placing - bracket setup
 def place_order(contract, direction, amount, price, stop):
     mod = amount % 4
+
     amount1 = int(amount/4) + (1 if mod >= 1 else 0)
     amount2 = int(amount/4) + (1 if mod >= 2 else 0)
     amount3 = int(amount/4) + (1 if mod == 3 else 0)
@@ -121,6 +112,7 @@ def place_order(contract, direction, amount, price, stop):
         tif='GTC',
         outsideRth=True
     )
+
     for b1 in order1:
         ib.placeOrder(contract, b1)
     for b2 in order2:
@@ -129,6 +121,7 @@ def place_order(contract, direction, amount, price, stop):
         ib.placeOrder(contract, b3)
     for b4 in order4:
         ib.placeOrder(contract, b4)
+    
     ib.sleep(3)
 
 # Check if intraday hours
@@ -153,23 +146,25 @@ def is_intraday(intra_start_hour, intra_start_minute, intra_end_hour, intra_end_
     else:
         return False
 
-# Calculate maximum number of contracts available for order
+# Calculate maximum number of contracts available to trade
 def calc_max_contracts(contract, tick_value, tick_stop):
     net_liquidation = float([x for x in ib.accountSummary() if x.tag == 'NetLiquidation'][0].value)
     full_init_margin_req = float([x for x in ib.accountSummary() if x.tag == 'FullInitMarginReq'][0].value)
     margin_available = net_liquidation - full_init_margin_req
+
     contract_init_margin_req = float(ib.whatIfOrder(contract, Order(action='BUY', totalQuantity=1, orderType='MKT')).initMarginChange)
     margin_multiplier = margin_day_mult if is_intraday(day_h, day_m, ovn_h, ovn_m) else margin_ovn_mult
     adj_init_margin_req = contract_init_margin_req * margin_multiplier
+
+    max_risk = margin_available * max_trade_risk
+
     tick_value = tick_value * 0.1 if micro else tick_value
     adj_tick_value = tick_value * curr_conv
     contract_risk = adj_tick_value * tick_stop
 
-    max_risk = margin_available * max_trade_risk
-
     return min(int(margin_available/adj_init_margin_req), int(max_risk/contract_risk))
 
-# Cancel any orders that have been open for longer than the order timeout
+# Cancel any orders that have exceeded order timeout
 def cancel_stale_parent_orders(last_bar):
     timediff = (last_bar - open_order_datetime).total_seconds() / 60.0
     if timediff >= order_timeout:
@@ -178,7 +173,7 @@ def cancel_stale_parent_orders(last_bar):
             ib.cancelOrder(order)
         ib.sleep(3)
 
-# Run for each contract after bar update
+# On bar data update
 def on_bars_update(bars, contract, desc):
     global algo_live
     last_bar = bars[-1].date.replace(tzinfo=None)
@@ -206,7 +201,6 @@ def on_bars_update(bars, contract, desc):
 
 # Periodic data fetch from IB
 def fetch_bars():
-    # updated = np.array([False] * len(contracts))
     global ib_cont, ib_cont_micro
     updated = False
     while not updated:
