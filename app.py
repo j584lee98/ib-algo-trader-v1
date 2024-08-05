@@ -20,7 +20,7 @@ ovn_m = 15
 margin_day_mult = 1.43
 margin_ovn_mult = 1.00
 
-curr_conv = 1.37
+curr_conv = 1.39
 max_trade_risk = 0.02
 
 order_timeout = 30
@@ -40,9 +40,8 @@ ib.connect(port=port, clientId=0)
 
 # Contracts + Data Resolution
 contracts = json.load(open('contracts.json'))
-timeframes = json.load(open('timeframes.json'))
 
-ohlcv_bars = np.array([[None] * len(contracts)] * len(timeframes))
+ohlcv_bars = np.array([None] * len(contracts))
 
 contract_details = []
 micro_contract_details = []
@@ -206,24 +205,23 @@ def on_bars_update(bars, contract, desc):
 
 # Periodic data fetch from IB
 def fetch_bars():
-    updated = np.array([[False] * len(contracts)] * len(timeframes))
-    while not all([all(row) for row in updated]):
-        for i, (tf, dur) in enumerate(timeframes.items()):
-            for j, desc in enumerate(contracts.values()):
-                if updated[i][j] == False:
-                    with suppress(IndexError):
-                        ohlcv_bars[i][j] = ib.reqHistoricalData(
-                            contract_details[j],
-                            endDateTime='',
-                            durationStr=dur,
-                            barSizeSetting=tf,
-                            whatToShow='TRADES',
-                            useRTH=False
-                        )
-                        if ohlcv_bars[i][j][-1].date.minute == datetime.now().minute:
-                            contract = micro_contract_details[j] if micro else contract_details[j]
-                            on_bars_update(ohlcv_bars[i][j], contract, desc)
-                            updated[i][j] = True
+    updated = np.array([False] * len(contracts))
+    while not all(updated):
+        for i, desc in enumerate(contracts.values()):
+            if updated[i] == False:
+                with suppress(IndexError):
+                    ohlcv_bars[i] = ib.reqHistoricalData(
+                        contract_details[i],
+                        endDateTime='',
+                        durationStr='86400 S',
+                        barSizeSetting='10 mins',
+                        whatToShow='TRADES',
+                        useRTH=False
+                    )
+                    if ohlcv_bars[i][-1].date.minute == datetime.now().minute:
+                        contract = micro_contract_details[i] if micro else contract_details[i]
+                        on_bars_update(ohlcv_bars[i], contract, desc)
+                        updated[i] = True
         util.sleep(1)
 
 def main():
