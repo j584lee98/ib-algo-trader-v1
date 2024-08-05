@@ -38,33 +38,34 @@ micro = args.micro
 ib = IB()
 ib.connect(port=port, clientId=0)
 
-# Contracts + Data Resolution
-contracts = json.load(open('contracts.json'))
+# Contract
+cont_desc = json.load(open('contract.json'))
 
-ohlcv_bars = np.array([None] * len(contracts))
+# ohlcv_bars = np.array([None] * len(contracts))
 
-contract_details = []
-micro_contract_details = []
+# contract_details = []
+# micro_contract_details = []
 
-for con in contracts.values():
-    contract = Contract(
-        secType=con['secType'],
-        symbol=con['symbol'],
-        localSymbol=con['localSymbol'],
-        lastTradeDateOrContractMonth=con['lastTradeDateOrContractMonth'],
-        exchange=con['exchange']
-    )
-    micro_contract = Contract(
-        secType=con['secType'],
-        symbol=con['microSymbol'],
-        localSymbol=con['localSymbol'],
-        lastTradeDateOrContractMonth=con['lastTradeDateOrContractMonth'],
-        exchange=con['exchange']
-    )
-    contract = ib.qualifyContracts(contract)[0]
-    micro_contract = ib.qualifyContracts(micro_contract)[0]
-    contract_details.append(contract)
-    micro_contract_details.append(micro_contract)
+# for con in contracts.values():
+ib_cont = Contract(
+    secType=cont_desc['secType'],
+    symbol=cont_desc['symbol'],
+    localSymbol=cont_desc['localSymbol'],
+    lastTradeDateOrContractMonth=cont_desc['lastTradeDateOrContractMonth'],
+    exchange=cont_desc['exchange']
+)
+ib_cont_micro = Contract(
+    secType=cont_desc['secType'],
+    symbol=cont_desc['microSymbol'],
+    localSymbol=cont_desc['localSymbol'],
+    lastTradeDateOrContractMonth=cont_desc['lastTradeDateOrContractMonth'],
+    exchange=cont_desc['exchange']
+)
+ib_cont = ib.qualifyContracts(ib_cont)[0]
+ib_cont_micro = ib.qualifyContracts(ib_cont_micro)[0]
+
+    # contract_details.append(contract)
+    # micro_contract_details.append(micro_contract)
 
 open_order_datetime = datetime.now()
 algo_live = False
@@ -205,23 +206,23 @@ def on_bars_update(bars, contract, desc):
 
 # Periodic data fetch from IB
 def fetch_bars():
-    updated = np.array([False] * len(contracts))
-    while not all(updated):
-        for i, desc in enumerate(contracts.values()):
-            if updated[i] == False:
-                with suppress(IndexError):
-                    ohlcv_bars[i] = ib.reqHistoricalData(
-                        contract_details[i],
-                        endDateTime='',
-                        durationStr='86400 S',
-                        barSizeSetting='10 mins',
-                        whatToShow='TRADES',
-                        useRTH=False
-                    )
-                    if ohlcv_bars[i][-1].date.minute == datetime.now().minute:
-                        contract = micro_contract_details[i] if micro else contract_details[i]
-                        on_bars_update(ohlcv_bars[i], contract, desc)
-                        updated[i] = True
+    # updated = np.array([False] * len(contracts))
+    global ib_cont, ib_cont_micro
+    updated = False
+    while not updated:
+        with suppress(IndexError):
+            ohlcv_bars = ib.reqHistoricalData(
+                ib_cont,
+                endDateTime='',
+                durationStr='86400 S',
+                barSizeSetting='10 mins',
+                whatToShow='TRADES',
+                useRTH=False
+            )
+            if ohlcv_bars[-1].date.minute == datetime.now().minute:
+                ib_cont = ib_cont_micro if micro else ib_cont
+                on_bars_update(ohlcv_bars, ib_cont, cont_desc)
+                updated = True
         util.sleep(1)
 
 def main():
