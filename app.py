@@ -211,7 +211,8 @@ def fetch_bars():
                 durationStr='86400 S',
                 barSizeSetting='10 mins',
                 whatToShow='TRADES',
-                useRTH=False
+                useRTH=False,
+                timeout=300
             )
             if ohlcv_bars[-1].date.minute == datetime.now().minute:
                 ib_cont = ib_cont_micro if micro else ib_cont
